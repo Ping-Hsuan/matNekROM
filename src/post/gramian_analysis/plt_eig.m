@@ -7,8 +7,8 @@ hdr;
 eig = dlmread("eig.txt");
 
 % Plot the eigenvalue of the gramian matrix
-f=figure(1);
-f = setFigureProperties(f, myfig); ax = axes(f);
+f  = figure(1); f  = setFigureProperties(f, myfig);
+ax = axes(f);
 %
 loglog(ax,eig,lw,1.5); hold on;
 %
@@ -16,8 +16,9 @@ setAxisProperties(ax, "$\lambda_i$", myfig);
 print(gcf,"eig","-dpdf","-r300")
 
 % Plot the normalized eigenvalue of the gramian matrix
-f=figure(2);
-f = setFigureProperties(f, myfig); ax = axes(f);
+f  = figure(2);
+f  = setFigureProperties(f, myfig);
+ax = axes(f);
 %
 loglog(ax,eig/sum(eig),lw,1.5); hold on;
 %
@@ -70,7 +71,7 @@ print(gcf,"accumulated_eig","-dpdf")
 
 function fig = setFigureProperties(fig, myfig)
     set(fig, 'PaperUnits', 'inches');
-    set(fig, 'Units', 'Inches', 'Position', [0, 0, myfig.fig_width, myfig.fig_height], 'PaperUnits', 'Inches', 'PaperSize', [myfig.fig_width, myfig.fig_height])
+    set(fig, 'Units', 'Inches', 'Position', [0, 0, myfig.fig_width, myfig.fig_height], 'PaperUnits', 'Inches', 'PaperSize', [myfig.fig_width, myfig.fig_height]);
 end
 
 function setAxisProperties(ax, ylabelStr, myfig)
