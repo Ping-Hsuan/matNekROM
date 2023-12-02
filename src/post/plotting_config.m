@@ -23,3 +23,28 @@ fig_size = [fig_width, fig_height];
 markers = ['o','x','square'];
 linest = ["-","--","-."];
 
+myfig          = struct();
+myfig.lw       = 'linewidth';           %%% Plotting defs
+myfig.fs       ='fontsize';             %%% Plotting defs
+myfig.intp     = 'interpreter';         %%% Plotting defs
+myfig.ltx      = 'latex';               %%% Plotting defs
+myfig.cr       = 'Color';
+myfig.ms       = 'MarkerSize';
+myfig.dispname = 'DisplayName';
+
+%%columnwidth = 469.75499; % in pts
+columnwidth = 469.75499/2;
+fig_width_pt = columnwidth;
+inches_per_pt = 1.0/72.27;
+fig_width = fig_width_pt*inches_per_pt;
+heightratio = 0.60;
+fig_height = fig_width*heightratio;
+fig_size = [fig_width, fig_height];
+
+myfig.fig_width  = fig_width;
+myfig.fig_height = fig_height;
+
+markers = ['o','x','square'];
+linest  = ["-","--","-."];
+
+

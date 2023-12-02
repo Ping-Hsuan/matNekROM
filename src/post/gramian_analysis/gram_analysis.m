@@ -1,10 +1,14 @@
+% This script performs various plots related to Gramian matrix eigenvalues.
+% Ensure that 'plotting_config.m' is in the same directory or provide the correct path.
+
 close all; clear all;
 
-hdr;
-global myfig
+% Load plotting configurations from 'plotting_config.m'
+plotting_config; global myfig
 
 %get_eig;
 
+% Load eigenvalues from the 'eig.txt' file
 eig = dlmread("eig.txt");
 
 PlotGramEig(eig);           % Plot the Gramian matrix eigenvalue
