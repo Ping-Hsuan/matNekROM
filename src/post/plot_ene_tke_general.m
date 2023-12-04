@@ -40,7 +40,7 @@ if (ifgrom)
         [grom{ii}.qoi, grom{ii}.mqoi, grom{ii}.stdqoi] = ConstructQoI(grom{ii},bu0,ifene);
         grom{ii} = ComputeQoIError(grom{ii},snap,fom)
         DisplayResults(grom{ii},snap,fom,iffom);
-        GenerateTable(grom{ii},snap,fom,iffom);
+        grom{ii} = GenerateTable(grom{ii},snap,fom,iffom);
     end
 end
 
@@ -234,13 +234,12 @@ if (ifcrom)
         outputdir = "crom_N"+crom{ii}.nb;
         mkdir(outputdir);
     
+        % Process C-ROM data
         [crom{ii}.ucoef, crom{ii}.ua] = loadROMData("c-rom", crom{ii}.nb);
-
         [crom{ii}.qoi, crom{ii}.mqoi, crom{ii}.stdqoi] = ConstructQoI(crom{ii},bu0,ifene);
-%       [crom{ii}.merr,crom{ii}.stderr,crom{ii}.merrF,crom{ii}.stderrF] = ComputeQoIError(crom{ii},snap,fom);
         crom{ii} = ComputeQoIError(crom{ii},snap,fom)
         DisplayResults(crom{ii},snap,fom,iffom);
-        GenerateTable(crom{ii},snap,fom,iffom);
+        crom{ii} = GenerateTable(crom{ii},snap,fom,iffom);
 
         figure(1)
         set(gcf, 'PaperUnits', 'inches');
@@ -299,139 +298,6 @@ if (ifcrom)
         close(1)
     end
 end
-%crom = struct();
-%crom.ucoef = {}
-%crom.ua = {}
-%crom.nb = {}
-%for ii=1:size(nb_list,2)
-%    crom.nb{ii} = nb_list(ii);
-%    bu = bu0(1:crom.nb{ii}+1,1:crom.nb{ii}+1);
-%    outputdir = "crom_N"+crom.nb{ii};
-%    mkdir(outputdir);
-%    summary_crom = table;
-%
-%    if (ifcrom)
-%        crom.ucoef{ii} = dlmread("../"+"c-rom_"+crom.nb{ii}+"/ucoef");
-%        ndata = length(crom.ucoef{ii})/(crom.nb{ii}+1);
-%        crom.ucoef{ii} = reshape(crom.ucoef{ii},ndata,crom.nb{ii}+1)';
-%        crom.ua{ii} = dlmread("../"+"c-rom_"+crom.nb{ii}+"/ua");
-%        if ifene
-%            [ene_crom, mene_rom, stdene_rom] = ConstructQoI(crom.ucoef{ii},bu,ifene,crom.ua{ii})
-%            mene_err = abs(snap.mqoi-mene_rom)/snap.mqoi;
-%            stdene_err = abs(snap.stdqoi-stdene_rom)/snap.stdqoi;
-%            if iffom
-%                mene_err_f = abs(fom.mqoi-mene_rom)/fom.mqoi;
-%                stdene_err_f = abs(fom.stdqoi-stdene_rom)/stdene_fom;
-%                disp([crom.nb{ii} snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err]);
-%                disp([crom.nb{ii} fom.mqoi fom.stdqoi mene_rom stdene_rom mene_err_f stdene_err_f]);
-%                tt = {crom.nb{ii} fom.mqoi fom.stdqoi snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err mene_err_f stdene_err_f};
-%                summary_crom = [summary_crom; tt];
-%            else
-%                disp([crom.nb{ii} snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err]);
-%                tt = {crom.nb{ii} snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err};
-%                summary_crom = [summary_crom; tt];
-%            end
-%        else
-%%           ene_crom = table;
-%%           [ene_crom] = recon_intke(crom(1:crom.nb{ii}+1,:),ua,bu(1:crom.nb{ii}+1,1:crom.nb{ii}+1));
-%%           [mtke_rom, stdtke_rom] = recon_tke_stat(ene_crom.b);
-%            [ene_crom, mtke_rom, stdtke_rom] = ConstructQoI(crom.ucoef{ii},bu,ifene,crom.ua{ii})                                                                                                                                            
-%%           mtke_err = abs(mtke_snap-mtke_rom)/mtke_snap;
-%%           stdtke_err = abs(stdtke_snap-stdtke_rom)/stdtke_snap;
-%            mtke_err = abs(snap.mqoi-mtke_rom)/snap.mqoi;
-%            stdtke_err = abs(snap.stdqoi-stdtke_rom)/snap.stdqoi;
-%            if iffom
-%                mtke_err_f = abs(mtke_fom-mtke_rom)/mtke_fom;
-%                stdtke_err_f = abs(stdtke_fom-stdtke_rom)/stdtke_fom;
-%                disp([grom.nb{ii} snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err]);
-%                disp([grom.nb{ii} mtke_fom stdtke_fom mtke_rom stdtke_rom mtke_err_f stdtke_err_f]);
-%                tt = {grom.nb{ii} mtke_fom stdtke_fom snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err mtke_err_f stdtke_err_f};
-%                summary = [summary; tt];
-%            else
-%                disp([grom.nb{ii} snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err]);
-%                tt = {grom.nb{ii} snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err};
-%                summary = [summary; tt];
-%            end
-%        end
-%
-%        figure(1)
-%        set(gcf, 'PaperUnits', 'inches');
-%        set(gcf, 'Units', 'Inches', 'Position', [0, 0, fig_width, fig_height],...
-%            'PaperUnits', 'Inches', 'PaperSize', [fig_width, fig_height]);
-%        t=linspace(T_rom/size(ene_crom,1),T_rom,size(ene_crom,1))+T_0;
-%        plot(t,ene_crom,'-',cr,cmap(ii+1,:),dispname,"C-ROM with $N="+crom.nb{ii}+"$",lw,1.2); hold on
-%        if (ifgrom)
-%            plot(t,ene_grom,'-',cr,cmap(1,:),dispname,"G-ROM with $N="+grom.nb{1}+"$",lw,1.2); hold on
-%        end
-%        xl = xline(T_snap,':',{'Training','window'},'HandleVisibility','off');
-%        xl.LabelVerticalAlignment = 'top';
-%        xl.LabelHorizontalAlignment = 'left';
-%%       xl.LabelOrientation = 'horizontal';
-%        xl.LineWidth = 1.5
-%
-%        if iffom
-%            if if3dlidh && ifpred
-%                t_fom=linspace(2725.125,3725,8000);
-%                plot(t_fom,fom(:,3),'k-',lw,1.2); hold on
-%            else
-%                plot(fom(:,2),fom(:,3),'k-',lw,1.2,dispname,"FOM"); hold on
-%            end
-%        else
-%            t=linspace(T_snap/size(ene_snap,1),T_snap,size(ene_snap,1))+T_0;
-%            plot(t,ene_snap,'k-',dispname,"Projection, $N="+nb+"$"); hold on
-%        end
-%        ax=gca; ax.FontSize=8; %xlim([0, T_rom])
-%        
-%        if ifene
-%            if ~isempty(ylims)
-%                ylim(ylims); 
-%            end
-%            if ~isempty(yticks_)
-%                yticks(yticks_);
-%            end
-%            xlabel("$t$",intp,ltx,fs,8); ylabel("$E(t)$",intp,ltx,fs,8);
-%        else
-%            if ~isempty(ylims)
-%                ylim(ylims); 
-%            end
-%            if ~isempty(yticks_)
-%                yticks(yticks_);
-%            end
-%            xlabel("$t$",intp,ltx,fs,8); ylabel("$\mathrm{E}_{\mathrm{fluc}}(t)$",intp,ltx,fs,8);
-%        end
-%        figure(1)
-%        leg = legend({}, fs,8,intp,ltx,'location','best','NumColumns',3);
-%        formatfig(ax); 
-%        
-%        if ifene
-%            print(gcf,outputdir+"/"+"ene","-dpdf","-r300");
-%        else
-%            print(gcf,outputdir+"/"+"intke","-dpdf","-r300");
-%        end
-%        close(1)
-%        if (ifcreate_table)
-%            if ifene
-%                if iffom
-%                    summary_crom.Properties.VariableNames = {'nb','fom.mqoi','fom.stdqoi','mene_snap','stdene_snap',...
-%                    'mene_rom','stdene_rom','mene_err','stdene_err','mene_err_f','stdene_err_f'};
-%                else
-%                    summary_crom.Properties.VariableNames = {'nb','mene_snap','stdene_snap',...
-%                    'mene_rom','stdene_rom','mene_err','stdene_err'};
-%                end
-%                writetable(summary_crom,outputdir+"/"+"ene_crom"+"_N"+crom.nb{ii});
-%            else
-%                if iffom
-%                    summary_crom.Properties.VariableNames = {'nb','mtke_fom','stdtke_fom','mtke_snap','stdtke_snap',...
-%                    'mtke_rom','stdtke_rom','mtke_err','stdtke_err','mtke_err_f','stdtke_err_f'};
-%                else
-%                    summary_crom.Properties.VariableNames = {'nb','mtke_snap','stdtke_snap',...
-%                    'mtke_rom','stdtke_rom','mtke_err','stdtke_err'};
-%                end
-%                writetable(summary_crom,outputdir+"/"+"intke_crom"+"_N"+crom.nb{ii});
-%            end
-%        end
-%    end
-%end
 
 function [qoi, mqoi, stdqoi] = ConstructQoI(rom,bu0,ifene)
     bu = bu0(1:rom.nb+1,1:rom.nb+1);
