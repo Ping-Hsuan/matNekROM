@@ -14,7 +14,7 @@ snap = struct;
 snap.nb = mb-1;
 snap.ucoef = dlmread("../../../ops/uk"); % Load projected coefficients of snapshots
 ns = length(snap.ucoef)/mb; snap.ucoef = reshape(snap.ucoef,mb,ns);
-snap.muk = mean(snap.ucoef,2); % Compute the mean of the projected coefficients
+snap.ua = mean(snap.ucoef,2); % Compute the mean of the projected coefficients
 [snap.qoi, snap.mqoi, snap.stdqoi] = ConstructQoI(snap,bu0,ifene);
 
 %% Reading FOM data if available
@@ -45,92 +45,49 @@ if (ifgrom)
 end
 
 %% Plot quantities of the Regularized ROM
-ifreg = 0;
-reg_case = "leray";
-nb_list = [100];
-reg = struct();
-reg.ucoef = {}
-reg.ua = {}
-reg.nb = {}
-for ii=1:size(nb_list,2)
-    reg.nb{ii} = nb_list(ii);
-    bu = bu0(1:reg.nb{ii}+1,1:reg.nb{ii}+1);
+global ifreg
+ifreg = 1;
+reg_case = "EFR";
+nb_list = [300];
+regrom = cell(1, length(nb_list));
+if (ifreg)
+    [chi_list, radius_list] = create_hyperparam();
+    for ii=1:size(nb_list,2)
+        regrom{ii} = SetupROMStructure();
+        regrom{ii}.nb = nb_list(ii);
+        for order=4:4
+            regrom{ii}.dforder=order;
 
-    if (ifreg)
-        [chi_list, radius_list] = create_hyperparam();
-        for order=1:1
-            dfOrder=order
-%           outputdir = reg_case+"_N"+reg.nb{ii}+"_"+dfOrder+"_dfrepeat";
-            outputdir = reg_case+"_N"+reg.nb{ii}+"_"+dfOrder;
+            % Setup output directory
+            outputdir = reg_case+"_N"+regrom{ii}.nb+"_"+regrom{ii}.dforder;
             mkdir(outputdir);
-            summary_reg = table;
             for nn=1:size(chi_list,1)
-                relax = chi_list(nn); dfRadius = radius_list(nn);
-                disp([dfOrder dfRadius relax])
+                regrom{ii}.relax  = chi_list(nn);
+                regrom{ii}.dfradius = radius_list(nn);
+                disp([regrom{ii}.dforder regrom{ii}.dfradius regrom{ii}.relax])
 
-                f=figure(1);
+                % Setup directory name
+                casedir= sprintf('%s_%d_%d_%.8f_%.8f',reg_case,regrom{ii}.nb,regrom{ii}.dforder,regrom{ii}.dfradius,regrom{ii}.relax)
+    
+                [regrom{ii}.ucoef, regrom{ii}.ua] = loadROMData(casedir, regrom{ii}.nb);
+                [regrom{ii}.qoi, regrom{ii}.mqoi, regrom{ii}.stdqoi] = ConstructQoI(regrom{ii},bu0,ifene);
+                regrom{ii} = ComputeQoIError(regrom{ii},snap,fom)
+                DisplayResults(regrom{ii},snap,fom,iffom);
+                regrom{ii} = GenerateTable(regrom{ii},snap,fom,iffom);
+
+                figure(1)
                 set(gcf, 'PaperUnits', 'inches');
                 set(gcf, 'Units', 'Inches', 'Position', [0, 0, fig_width, fig_height],...
                     'PaperUnits', 'Inches', 'PaperSize', [fig_width, fig_height]);
-
-                casedir= sprintf('%s_%d_%d_%.8f_%.8f',reg_case,reg.nb{ii},dfOrder,dfRadius,relax)
-
-                reg.ucoef{ii} = dlmread("../"+casedir+"/ucoef");
-                ndata = length(reg.ucoef{ii})/(reg.nb{ii}+1);
-                reg.ucoef{ii} = reshape(reg.ucoef{ii},ndata,reg.nb{ii}+1)';
-                reg.ua{ii} = dlmread("../"+casedir+"/ua");
-                if ifene
-%                   ene = table;
-%                   [ene] = recon_ene(grom(1:nb+1,:),bu(1:nb+1,1:nb+1));
-%                   [mene_rom, stdene_rom] = recon_ene_stat(ene);
-                    [ene, mene_rom, stdene_rom] = ConstructQoI(reg.ucoef{ii},bu,ifene,reg.ua{ii})
-                    mene_err = abs(snap.mqoi-mene_rom)/snap.mqoi;
-                    stdene_err = abs(snap.stdqoi-stdene_rom)/snap.stdqoi;
-                    if iffom
-                        mene_err_f = abs(fom.mqoi-mene_rom)/fom.mqoi;
-                        stdene_err_f = abs(fom.stdqoi-stdene_rom)/stdene_fom;
-                        disp([reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err]);
-                        disp([reg.nb{ii} dfOrder dfRadius relax fom.mqoi fom.stdqoi mene_rom stdene_rom mene_err_f stdene_err_f]);
-                        tt = {reg.nb{ii} dfOrder dfRadius relax fom.mqoi fom.stdqoi snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err mene_err_f stdene_err_f};
-                        summary_reg = [summary_reg; tt];
-                    else
-                        disp([reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err]);
-                        tt = {reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mene_rom stdene_rom mene_err stdene_err};
-                        summary_reg = [summary_reg; tt];
-                    end
-                else
-%                   ene = table;
-%                   [ene] = recon_intke(grom(1:nb+1,:),ua,bu(1:nb+1,1:nb+1));
-%                   [mtke_rom, stdtke_rom] = recon_tke_stat(ene.b);
-                    [ene, mtke_rom, stdtke_rom] = ConstructQoI(reg.ucoef{ii},bu,ifene,reg.ua{ii})                                                                                                                                            
-%                   mtke_err = abs(mtke_snap-mtke_rom)/mtke_snap;
-%                   stdtke_err = abs(stdtke_snap-stdtke_rom)/stdtke_snap;
-                    mtke_err = abs(snap.mqoi-mtke_rom)/snap.mqoi;
-                    stdtke_err = abs(snap.stdqoi-stdtke_rom)/snap.stdqoi;
-                    if iffom
-                        mtke_err_f = abs(mtke_fom-mtke_rom)/mtke_fom;
-                        stdtke_err_f = abs(stdtke_fom-stdtke_rom)/stdtke_fom;
-                        disp([reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err]);
-                        disp([reg.nb{ii} dfOrder dfRadius relax mtke_fom stdtke_fom mtke_rom stdtke_rom mtke_err_f stdtke_err_f]);
-                        tt = {reg.nb{ii} dfOrder dfRadius relax mtke_fom stdtke_fom snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err mtke_err_f stdtke_err_f};
-                        summary_reg = [summary_reg; tt];
-                    else
-                        disp([reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err]);
-                        tt = {reg.nb{ii} dfOrder dfRadius relax snap.mqoi snap.stdqoi mtke_rom stdtke_rom mtke_err stdtke_err};
-                        summary_reg = [summary_reg; tt];
-                    end
-                end
-
-                figure(1)
-                t=linspace(T_rom/size(ene,1),T_rom,size(ene,1))+T_0;
-                plot(t,ene,'-',cr,cmap(ii+1,:),dispname,getLegendLabel(reg_case,reg.nb{ii}),lw,1.2); hold on
-                plot(t,ene_grom,'-',cr,cmap(1,:),dispname,"G-ROM with $N="+grom.nb{1}+"$",lw,1.2); hold on
+                t=linspace(T_rom/size(regrom{ii}.qoi,1),T_rom,size(regrom{ii}.qoi,1))+T_0;
+                plot(t,regrom{ii}.qoi,'-',cr,cmap(ii+1,:),dispname,getLegendLabel(reg_case,regrom{ii}.nb),lw,1.2); hold on
+                plot(t,grom{ii}.qoi,'-',cr,cmap(1,:),dispname,"G-ROM with $N="+grom{ii}.nb+"$",lw,1.2); hold on
                 xl = xline(T_snap,':',{'Training','window'},'HandleVisibility','off');
                 xl.LabelVerticalAlignment = 'top';
                 xl.LabelHorizontalAlignment = 'left';
                 xl.FontSize = 8;
 %               xl.LabelOrientation = 'horizontal';
-                xl.LineWidth = 1.5
+                xl.LineWidth = 1.5;
 
                 if iffom
                     if if3dlidh && ifpred
@@ -224,7 +181,7 @@ for ii=1:size(nb_list,2)
 end
 
 %% Plot quantities of the Constrained ROM
-ifcrom = 1;
+ifcrom = 0;
 nb_list = [100];
 crom = cell(1, length(nb_list));
 if (ifcrom)
@@ -305,6 +262,7 @@ function [qoi, mqoi, stdqoi] = ConstructQoI(rom,bu0,ifene)
     if ifene
         [qoi] = recon_ene(rom.ucoef,bu);
     else
+        rom
         [qoi] = recon_intke(rom.ucoef,rom.ua,bu);
     end
     mqoi   = mean(qoi);
@@ -317,8 +275,9 @@ function [chi_list, radius_list] = create_hyperparam()
     chi_tmp = [chi];
     chi_tmp = [0.05 0.1 0.5 1];
     chi_tmp = [1];
+    chi_tmp = [0.005];
     ttt = [linspace(0.1,0.3,20)'];
-    ttt = [0.13157895];
+%   ttt = [0.13157895];
 %   ttt = [0.25789474];
 %   ttt = [0.16315789];
 %   ttt = [linspace(0.01,0.1,25)';linspace(0.1,0.3,20)'];
@@ -369,7 +328,13 @@ function [err] = computeRelativeError(ref, data)
 end
 
 function DisplayResults(rom,snap,fom,iffom)
-    disp([rom.nb snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr]);
+    global ifreg
+
+    if ifreg
+        disp([rom.nb rom.dforder rom.dfradius rom.relax snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr]);
+    else
+        disp([rom.nb snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr]);
+    end
     if iffom
         disp([rom.nb fom.mqoi fom.stdqoi rom.mqoi rom.stdqoi rom.merrF rom.stderrF]);
     end
@@ -388,17 +353,36 @@ function [rom] = SetupROMStructure();
     rom.merrF = {};
     rom.stderrF = {};
     rom.summary = table;
+
+    global ifreg
+    if ifreg
+        rom.dforder  = {};
+        rom.dfradius = {};
+        rom.relax    = {};
+    end
 end
 
 function [ucoef, ua] = loadROMData(model, nb)
-    ucoef = dlmread("../" + model + "_" + nb + "/ucoef");
-    ua = dlmread("../" + model + "_" + nb + "/ua");
+    global ifreg
+
+    if ifreg
+        dirname = "../" + model;
+    else
+        dirname = "../" + model + "_" + nb;
+    end
+    ucoef = dlmread(dirname + "/ucoef");
+    ua = dlmread(dirname + "/ua");
     ndata = length(ucoef) / (nb + 1);
     ucoef = reshape(ucoef, ndata, nb + 1)';
 end
 
-function GenerateTable(rom,snap,fom,iffom)
-    results_cell = {rom.nb snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr};
+function rom = GenerateTable(rom,snap,fom,iffom)
+    global ifreg
+    if ifreg
+        results_cell = {rom.nb rom.dforder rom.dfradius rom.relax snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr};
+    else
+        results_cell = {rom.nb snap.mqoi snap.stdqoi rom.mqoi rom.stdqoi rom.merr rom.stderr};
+    end
 
     if iffom
         results_cell = [results_cell, {fom.mqoi fom.stdqoi rom.merrF rom.stderrF}];
